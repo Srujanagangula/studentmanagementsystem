@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventFlow | End-to-End Event Lifecycle Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;      /* Indigo */
+            --primary-dark: #4f46e5;
+            --accent: #10b981;       /* Emerald */
+            --bg-global: #f3f4f6;
+            --bg-card: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-global); color: var(--text-main); line-height: 1.5; }
+
+        /* --- Navigation --- */
+        nav { background: var(--bg-card); box-shadow: var(--shadow-sm); padding: 0 2rem; height: 70px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+        .logo-icon { width: 32px; height: 32px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .nav-actions { display: flex; gap: 1rem; }
+        .btn { padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; border: none; text-decoration: none; text-align: center; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-outline { background: transparent; color: var(--text-main); border: 1px solid var(--border); }
+        .btn-outline:hover { background: var(--bg-global); border-color: var(--text-muted); }
+        .btn-success { background: var(--accent); color: white; }
+
+        /* --- Layout --- */
+        .container { max-width: 1280px; margin: 0 auto; padding: 2rem; }
+        .hidden { display: none !important; }
+
+        /* --- Hero Section --- */
+        .hero { position: relative; border-radius: var(--radius); overflow: hidden; margin-bottom: 3rem; background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%); color: white; padding: 4rem 2rem; text-align: center; box-shadow: var(--shadow-lg); }
+        .hero h1 { font-size: 3rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.1; }
+        .hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto 2rem; }
+            .search-box { background: white; border-radius: 50px; padding: 0.5rem; display: flex; max-width: 600px; margin: 0 auto; box-shadow: var(--shadow-lg); }
+            .search-box input { flex: 1; border: none; padding: 0.8rem 1.5rem; font-size: 1rem; border-radius: 50px; outline: none; color: var(--text-main); }
+            .search-box button { border-radius: 50px; padding: 0 2rem; }
+
+        /* --- Event Grid --- */
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .section-title { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+
+        /* --- Event Card --- */
+        .card { background: var(--bg-card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--border); transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+        .card-img-wrapper { height: 200px; overflow: hidden; position: relative; }
+        .card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+        .card:hover .card-img { transform: scale(1.05); }
+        .card-badge { position: absolute; top: 15px; left: 15px; background: rgba(255, 255, 255, 0.95); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; box-shadow: var(--shadow-sm); }
+        
+        .card-body { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--text-main); }
+        .card-meta { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem; display: grid; gap: 0.5rem; }
+        .meta-item { display: flex; align-items: center; gap: 0.5rem; }
+        
+        .card-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); background: #fafafa; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+        .price-tag { font-size: 1.25rem; font-weight: 800; color: var(--text-main); }
+        .price-tag span { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
+
+        /* --- Dashboard --- */
+        .dash-container { display: grid; grid-template-columns: 260px 1fr; gap: 2rem; }
+        .sidebar { background: var(--bg-card); border-radius: var(--radius); padding: 1.5rem; height: fit-content; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+        .sidebar-menu { display: flex; flex-direction: column; gap: 0.5rem; }
+        .menu-item { padding: 0.8rem 1rem; border-radius: 8px; color: var(--text-muted); cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 0.75rem; transition: background 0.2s; }
+        .menu-item:hover { background: var(--bg-global); }
+        .menu-item.active { background: var(--primary); color: white; }
+
+        .dash-main { background: var(--bg-card); border-radius: var(--radius); padding: 2rem; border: 1px solid var(--border); min-height: 80vh; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: linear-gradient(135deg, #f3f4f6 0%, #ffffff 100%); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border); }
+        .stat-label { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+        .stat-value { font-size: 2rem; font-weight: 800; color: var(--primary); }
+
+        /* --- Forms --- */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
+        .form-input { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; transition: border-color 0.2s; }
+        .form-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+
+        /* --- Modals --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal { background: white; width: 100%; max-width: 500px; border-radius: var(--radius); box-shadow: var(--shadow-lg); animation: slideUp 0.3s ease-out; overflow: hidden; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 1.25rem; font-weight: 700; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); line-height: 1; }
+        .modal-body { padding: 1.5rem; }
+        .modal-footer { padding: 1.5rem; border-top: 1px solid var(--border); background: #fafafa; }
+
+        /* --- Ticket Design --- */
+        .ticket-container { background: white; border: 2px dashed var(--primary); border-radius: 8px; padding: 1.5rem; margin-top: 1rem; position: relative; }
+        .ticket-container::before, .ticket-container::after { content: ''; position: absolute; width: 20px; height: 20px; background: var(--bg-global); border-radius: 50%; left: -10px; top: 50%; transform: translateY(-50%); }
+        .ticket-container::after { left: auto; right: -10px; }
+        .qr-code { width: 80px; height: 80px; background: #eee; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #666; text-align: center; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dash-container { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2rem; }
+            .search-box { flex-direction: column; border-radius: var(--radius); }
+            .search-box input { border-radius: var(--radius); margin-bottom: 0.5rem; }
+            .search-box button { width: 100%; padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="logo" onclick="navigate('home')">
+            <div class="logo-icon">E</div>
+            EventFlow
+        </div>
+        <div class="nav-actions">
+            <button class="btn btn-outline" onclick="navigate('home')">Browse Events</button>
+            <button class="btn btn-primary" onclick="navigate('dashboard')">Organizer Dashboard</button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="container">
+        
+        <!-- HOME / ATTENDEE VIEW -->
+        <section id="home-view">
+            <div class="hero">
+                <h1>Discover & Book<br>Amazing Events</h1>
+                <p>Your journey starts here. Find tickets to the best concerts, conferences, and workshops near you.</p>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search events, artists, or venues..." onkeyup="filterEvents()">
+                    <button class="btn btn-primary">Search</button>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2 class="section-title">Upcoming Events</h2>
+            </div>
+
+            <div id="events-grid" class="grid">
+                <!-- Events loaded here -->
+            </div>
+        </section>
+
+        <!-- ORGANIZER DASHBOARD -->
+        <section id="dashboard-view" class="hidden">
+            <div class="dash-container">
+                <aside class="sidebar">
+                    <div class="sidebar-menu">
+                        <div class="menu-item active" onclick="dashTab('analytics')">📊 Analytics</div>
+                        <div class="menu-item" onclick="dashTab('create')">➕ Create Event</div>
+                        <div class="menu-item" onclick="dashTab('manage')">🎫 Manage Events</div>
+                    </div>
+                </aside>
+                <main class="dash-main">
+                    
+                    <!-- Analytics Tab -->
+                    <div id="tab-analytics">
+                        <h2 class="section-title" style="margin-bottom: 1.5rem;">Dashboard Overview</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Total Revenue</div>
+                                <div class="stat-value" id="stat-revenue">$0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Tickets Sold</div>
+                                <div class="stat-value" id="stat-tickets">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Active Events</div>
+                                <div class="stat-value" id="stat-events">0</div>
+                            </div>
+                        </div>
+                        <h3>Recent Sales Activity</h3>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;">Real-time sales data will appear here as tickets are booked.</p>
+                    </div>
+
+                    <!-- Create Event Tab -->
+                    <div id="tab-create" class="hidden">
+                        <h2 class="section-title" style="margin-bottom: 1.5rem;">Create New Event</h2>
+                        <form onsubmit="handleCreateEvent(event)">
+                            <div class="form-group">
+                                <label class="form-label">Event Name</label>
+                                <input type="text" id="ev-name" class="form-input" placeholder="e.g. Tech Summit 2024" required>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Category</label>
+                                    <select id="ev-category" class="form-input">
+                                        <option value="Conference">Conference</option>
+                                        <option value="Music">Music</option>
+                                        <option value="Workshop">Workshop</option>
+                                        <option value="Sports">Sports</option>
+                                        <option value="Art">Art</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Venue Location</label>
+                                    <input type="text" id="ev-venue" class="form-input" placeholder="e.g. City Hall" required>
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Date</label>
+                                    <input type="date" id="ev-date" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Time</label>
+                                    <input type="time" id="ev-time" class="form-input" required>
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Ticket Price ($)</label>
+                                    <input type="number" id="ev-price" class="form-input" placeholder="25.00" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Capacity</label>
+                                    <input type="number" id="ev-capacity" class="form-input" placeholder="500" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%; padding: 1rem;">Publish Event</button>
+                        </form>
+                    </div>
+
+                    <!-- Manage Events Tab -->
+                    <div id="tab-manage" class="hidden">
+                        <h2 class="section-title" style="margin-bottom: 1.5rem;">Your Events</h2>
+                        <div id="organizer-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                </main>
+            </div>
+        </section>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="booking-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Complete Booking</div>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Data Store ---
+        // High quality image URLs mapped to specific categories
+        const imageBank = {
+            'Conference': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            'Music': 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            'Workshop': 'https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            'Sports': 'https://images.unsplash.com/photo-1461896836934- voices?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', // Fallback fix below
+            'Art': 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            'default': 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+        };
+
+        let events = [
+            { 
+                id: 1, 
+                name: "Future of Web 2024", 
+                category: "Conference", 
+                date: "2024-12-15", 
+                time: "09:00", 
+                venue: "Silicon Valley Center", 
+                price: 149, 
+                capacity: 500, 
+                sold: 342, 
+                image: imageBank['Conference'] 
+            },
+            { 
+                id: 2, 
+                name: "Summer Beats Festival", 
+                category: "Music", 
+                date: "2024-07-20", 
+                time: "18:00", 
+                venue: "Madison Square Garden", 
+                price: 85, 
+                capacity: 2000, 
+                sold: 1800, 
+                image: imageBank['Music'] 
+            },
+            { 
+                id: 3, 
+                name: "Creative UX Workshop", 
+                category: "Workshop", 
+                date: "2024-11-05", 
+                time: "10:00", 
+                venue: "Design Hub, NYC", 
+                price: 40, 
+                capacity: 30, 
+                sold: 28, 
+                image: imageBank['Workshop'] 
+            },
+            { 
+                id: 4, 
+                name: "Urban Art Showcase", 
+                category: "Art", 
+                date: "2024-09-10", 
+                time: "11:00", 
+                venue: "Downtown Gallery", 
+                price: 25, 
+                capacity: 100, 
+                sold: 45, 
+                image: imageBank['Art'] 
+            }
+        ];
+
+        // --- 2. Initialization ---
+        window.onload = function() {
+            renderEvents();
+            updateAnalytics();
+        };
+
+        // --- 3. Navigation Logic ---
+        function navigate(page) {
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.add('hidden');
+            
+            if(page === 'home') {
+                document.getElementById('home-view').classList.remove('hidden');
+            } else {
+                document.getElementById('dashboard-view').classList.remove('hidden');
+                dashTab('analytics'); // Reset to dashboard home
+            }
+        }
+
+        function dashTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.dash-main > div').forEach(el => el.classList.add('hidden'));
+            // Show active tab
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            
+            // Update sidebar active state
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            // Simple event mapping for demo
+            if(tabName === 'analytics') document.querySelector('.menu-item:nth-child(1)').classList.add('active');
+            if(tabName === 'create') document.querySelector('.menu-item:nth-child(2)').classList.add('active');
+            if(tabName === 'manage') {
+                document.querySelector('.menu-item:nth-child(3)').classList.add('active');
+                renderOrganizerEvents();
+            }
+        }
+
+        // --- 4. Rendering Logic (Attendee) ---
+        function renderEvents(filter = "") {
+            const grid = document.getElementById('events-grid');
+            grid.innerHTML = '';
+
+            const filtered = events.filter(e => 
+                e.name.toLowerCase().includes(filter.toLowerCase()) || 
+                e.category.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            filtered.forEach(ev => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-img-wrapper">
+                        <img src="${ev.image}" alt="${ev.name}" class="card-img">
+                        <span class="card-badge">${ev.category}</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">${ev.name}</h3>
+                        <div class="card-meta">
+                            <div class="meta-item">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                ${new Date(ev.date).toDateString()}
+                            </div>
+                            <div class="meta-item">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                ${ev.venue}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="price-tag">$${ev.price} <span>/ ticket</span></div>
+                        <button class="btn btn-primary" onclick="openBookingModal(${ev.id})">Book Now</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterEvents() {
+            const term = document.getElementById('searchInput').value;
+            renderEvents(term);
+        }   
+
+        // --- 5. Booking & Payment Logic ---
+        function openBookingModal(id) {
+            const ev = events.find(e => e.id === id);
+            const modal = document.getElementById('booking-modal');
+            const body = document.getElementById('modal-body-content');
+            
+            body.innerHTML = `
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="font-size: 1.1rem; font-weight: 600;">${ev.name}</h4>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">${ev.date} at ${ev.venue}</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="cust-name" class="form-input" placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="cust-email" class="form-input" placeholder="john@example.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tickets</label>
+                    <input type="number" id="cust-qty" class="form-input" value="1" min="1" onchange="updateTotal(${ev.price})">
+                </div>
+                
+                <div style="background: #f9fafb; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Subtotal</span>
+                        <span id="modal-total">$${ev.price}.00</span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" style="width: 100%; padding: 0.8rem;" onclick="processPayment(${ev.id})">
+                    Pay Securely
+                </button>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function updateTotal(price) {
+            const qty = document.getElementById('cust-qty').value;
+            document.getElementById('modal-total').innerText = '$' + (price * qty) + '.00';
+        }
+
+        function processPayment(id) {
+            const ev = events.find(e => e.id === id);
+            const qty = parseInt(document.getElementById('cust-qty').value);
+            const name = document.getElementById('cust-name').value || 'Guest';
+            const email = document.getElementById('cust-email').value || 'guest@example.com';
+            
+            // Update Data
+            ev.sold += qty;
+            updateAnalytics();
+            
+            // Show Ticket
+            const body = document.getElementById('modal-body-content');
+            const ref = 'EV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+            
+            body.innerHTML = `
+                <div style="text-align: center; padding: 1rem 0;">
+                    <svg width="64" height="64" fill="none" stroke="#10b981" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <h3 style="margin: 1rem 0 0.5rem; color: var(--text-main);">Payment Successful!</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Your tickets have been sent to ${email}</p>
+                    
+                    <div class="ticket-container">
+                        <div class="qr-code">
+                            <svg width="100%" height="100%" viewBox="0 0 100 100">
+                                <rect x="0" y="0" width="100" height="100" fill="white"/>
+                                <rect x="10" y="10" width="30" height="30" fill="black"/>
+                                <rect x="60" y="10" width="30" height="30" fill="black"/>
+                                <rect x="10" y="60" width="30" height="30" fill="black"/>
+                                <rect x="50" y="50" width="10" height="10" fill="black"/>
+                                <rect x="70" y="70" width="20" height="20" fill="black"/>
+                            </svg>
+                        </div>
+                        <h4 style="margin-bottom: 0.5rem;">${ev.name}</h4>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">${ev.date} | ${ev.time}</p>
+                        <h2 style="margin: 0.5rem 0;">${qty} Ticket(s)</h2>
+                        <small style="font-family: monospace; color: var(--primary); font-weight: bold;">Ref: ${ref}</small>
+                    </div>
+                    
+                    <button class="btn btn-primary" style="margin-top: 1.5rem;" onclick="closeModal()">Done</button>
+                </div>
+            `;
+        }
+
+        function closeModal() {
+            document.getElementById('booking-modal').classList.add('hidden');
+        }
+
+        // --- 6. Organizer Logic ---
+        function handleCreateEvent(e) {
+            e.preventDefault();
+            
+            const category = document.getElementById('ev-category').value;
+            
+            const newEvent = {
+                id: Date.now(),
+                name: document.getElementById('ev-name').value,
+                category: category,
+                date: document.getElementById('ev-date').value,
+                time: document.getElementById('ev-time').value,
+                venue: document.getElementById('ev-venue').value,
+                price: parseFloat(document.getElementById('ev-price').value),
+                capacity: parseInt(document.getElementById('ev-capacity').value),
+                sold: 0,
+                image: imageBank[category] || imageBank['default']
+            };
+
+            events.push(newEvent);
+            alert('Event Published Successfully!');
+            e.target.reset();
+            renderEvents();
+            updateAnalytics();
+            dashTab('manage');
+        }
+
+        function renderOrganizerEvents() {
+            const container = document.getElementById('organizer-list');
+            container.innerHTML = '';
+
+            events.forEach(ev => {
+                const item = document.createElement('div');
+                item.style.cssText = 'display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border); align-items: center;';
+                item.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <img src="${ev.image}" style="width: 80px; height: 50px; object-fit: cover; border-radius: 4px;">
+                        <div>
+                            <h4 style="font-size: 1rem; font-weight: 600;">${ev.name}</h4>
+                            <small style="color: var(--text-muted);">${ev.date} - ${ev.venue}</small>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: var(--accent); font-weight: 700;">${ev.sold} Sold</div>
+                        <small style="color: var(--text-muted);">${ev.capacity - ev.sold} remaining</small>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function updateAnalytics() {
+            const totalRevenue = events.reduce((sum, ev) => sum + (ev.price * ev.sold), 0);
+            const totalTickets = events.reduce((sum, ev) => sum + ev.sold, 0);
+            const totalEvents = events.length;
+
+            document.getElementById('stat-revenue').innerText = '$' + totalRevenue.toLocaleString();
+            document.getElementById('stat-tickets').innerText = totalTickets.toLocaleString();
+            document.getElementById('stat-events').innerText = totalEvents;
+        }
+
+    </script>
+</body>
+</html>
