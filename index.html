@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduCore — Student Management System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['Space Grotesk', 'sans-serif'],
+        body: ['DM Sans', 'sans-serif'],
+      }
+    }
+  }
+}
+</script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-secondary: #161821;
+    --card: #1c1e2a;
+    --card-hover: #22253a;
+    --border: #2a2d3e;
+    --fg: #e8e9ed;
+    --fg-muted: #8b8fa3;
+    --accent: #e6a532;
+    --accent-hover: #f0b843;
+    --accent-glow: rgba(230, 165, 50, 0.15);
+    --success: #34d399;
+    --danger: #f87171;
+    --info: #60a5fa;
+    --warning: #fbbf24;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5 { font-family: 'Space Grotesk', sans-serif; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
+
+  /* Login background */
+  .login-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .login-bg::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(230,165,50,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(230,165,50,0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(20,22,34,1) 0%, var(--bg) 100%);
+    animation: bgPulse 12s ease-in-out infinite alternate;
+  }
+  @keyframes bgPulse {
+    0% { transform: scale(1) rotate(0deg); }
+    100% { transform: scale(1.1) rotate(2deg); }
+  }
+
+  .floating-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    animation: floatOrb 8s ease-in-out infinite alternate;
+  }
+  .floating-orb:nth-child(1) {
+    width: 300px; height: 300px;
+    background: rgba(230,165,50,0.07);
+    top: 10%; left: 10%;
+    animation-duration: 10s;
+  }
+  .floating-orb:nth-child(2) {
+    width: 250px; height: 250px;
+    background: rgba(52,211,153,0.05);
+    bottom: 15%; right: 15%;
+    animation-duration: 14s;
+    animation-delay: -3s;
+  }
+  .floating-orb:nth-child(3) {
+    width: 200px; height: 200px;
+    background: rgba(230,165,50,0.04);
+    top: 60%; left: 60%;
+    animation-duration: 9s;
+    animation-delay: -5s;
+  }
+  @keyframes floatOrb {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(30px, -20px) scale(1.1); }
+    100% { transform: translate(-20px, 30px) scale(0.95); }
+  }
+
+  /* Grid pattern */
+  .grid-pattern {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(230,165,50,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(230,165,50,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridMove 20s linear infinite;
+  }
+  @keyframes gridMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(60px, 60px); }
+  }
+
+  /* Dashboard background */
+  .dash-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse at 10% 0%, rgba(230,165,50,0.04) 0%, transparent 40%),
+      radial-gradient(ellipse at 90% 100%, rgba(52,211,153,0.03) 0%, transparent 40%),
+      var(--bg);
+  }
+
+  /* Card styles */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+  }
+  .card:hover {
+    background: var(--card-hover);
+    border-color: rgba(230,165,50,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  /* Stat card */
+  .stat-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.15;
+    transition: opacity 0.3s;
+  }
+  .stat-card:hover::after { opacity: 0.3; }
+  .stat-card.amber::after { background: var(--accent); }
+  .stat-card.green::after { background: var(--success); }
+  .stat-card.red::after { background: var(--danger); }
+  .stat-card.blue::after { background: var(--info); }
+
+  /* Input styles */
+  .input-field {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--fg);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    transition: all 0.25s ease;
+    width: 100%;
+    outline: none;
+  }
+  .input-field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .input-field::placeholder { color: var(--fg-muted); }
+
+  /* Button styles */
+  .btn-primary {
+    background: var(--accent);
+    color: #0f1117;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(230,165,50,0.3);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--fg-muted);
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-secondary:hover {
+    border-color: var(--fg-muted);
+    color: var(--fg);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .btn-danger {
+    background: rgba(248,113,113,0.1);
+    color: var(--danger);
+    border: 1px solid rgba(248,113,113,0.2);
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .btn-danger:hover {
+    background: rgba(248,113,113,0.2);
+    border-color: rgba(248,113,113,0.4);
+  }
+
+  .btn-edit {
+    background: rgba(230,165,50,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(230,165,50,0.2);
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .btn-edit:hover {
+    background: rgba(230,165,50,0.2);
+    border-color: rgba(230,165,50,0.4);
+  }
+
+  /* Table */
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .data-table thead th {
+    padding: 14px 16px;
+    text-align: left;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--fg-muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .data-table thead th:first-child { border-radius: 10px 0 0 0; }
+  .data-table thead th:last-child { border-radius: 0 10px 0 0; }
+  .data-table tbody tr {
+    transition: background 0.2s;
+  }
+  .data-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+  .data-table tbody td {
+    padding: 12px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(42,45,62,0.5);
+    vertical-align: middle;
+  }
+
+  /* Grade badges */
+  .grade-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .grade-A { background: rgba(52,211,153,0.15); color: #34d399; }
+  .grade-B { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .grade-C { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .grade-D { background: rgba(251,146,60,0.15); color: #fb923c; }
+  .grade-F { background: rgba(248,113,113,0.15); color: #f87171; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    min-height: 100vh;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 40;
+    transition: transform 0.3s ease;
+  }
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    color: var(--fg-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    margin: 2px 0;
+  }
+  .sidebar-link:hover {
+    color: var(--fg);
+    background: rgba(255,255,255,0.04);
+  }
+  .sidebar-link.active {
+    color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .sidebar-link i { width: 20px; text-align: center; font-size: 15px; }
+
+  .main-content {
+    margin-left: 260px;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Toast */
+  .toast-container {
+    position: fixed;
+    top: 24px; right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .toast {
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: toastIn 0.35s ease;
+    backdrop-filter: blur(12px);
+    border: 1px solid;
+    min-width: 280px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .toast.success {
+    background: rgba(52,211,153,0.12);
+    border-color: rgba(52,211,153,0.3);
+    color: #34d399;
+  }
+  .toast.error {
+    background: rgba(248,113,113,0.12);
+    border-color: rgba(248,113,113,0.3);
+    color: #f87171;
+  }
+  .toast.info {
+    background: rgba(230,165,50,0.12);
+    border-color: rgba(230,165,50,0.3);
+    color: var(--accent);
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(40px); }
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    max-width: 520px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: modalIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+  /* View transitions */
+  .view { display: none; animation: viewIn 0.35s ease; }
+  .view.active { display: block; }
+  @keyframes viewIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Particle canvas on login */
+  #particleCanvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Avatar */
+  .avatar {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: 'Space Grotesk', sans-serif;
+    flex-shrink: 0;
+  }
+
+  /* Search highlight */
+  .search-highlight { background: rgba(230,165,50,0.25); border-radius: 2px; padding: 0 2px; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-left: 0; }
+    .mobile-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 35; display: none;
+    }
+    .mobile-overlay.show { display: block; }
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.06);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+
+  /* Login card glow */
+  .login-card {
+    position: relative;
+  }
+  .login-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 21px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(230,165,50,0.3), transparent 50%, rgba(230,165,50,0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Tab bar for marks */
+  .marks-tab {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--fg-muted);
+    background: transparent;
+    border: none;
+  }
+  .marks-tab.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+  }
+  .marks-tab:hover:not(.active) { color: var(--fg); background: rgba(255,255,255,0.03); }
+
+  select.input-field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b8fa3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ==================== LOGIN PAGE ==================== -->
+<div id="loginPage" style="position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center;">
+  <div class="login-bg">
+    <div class="floating-orb"></div>
+    <div class="floating-orb"></div>
+    <div class="floating-orb"></div>
+    <div class="grid-pattern"></div>
+  </div>
+  <canvas id="particleCanvas"></canvas>
+
+  <div class="login-card card" style="padding:40px; width:100%; max-width:420px; position:relative; z-index:2;">
+    <div style="text-align:center; margin-bottom:32px;">
+      <div style="display:inline-flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:14px; background:var(--accent-glow); margin-bottom:16px;">
+        <i class="fas fa-graduation-cap" style="font-size:24px; color:var(--accent);"></i>
+      </div>
+      <h1 style="font-size:28px; font-weight:700; letter-spacing:-0.02em;">EduCore</h1>
+      <p style="color:var(--fg-muted); font-size:14px; margin-top:6px;">Student Management System</p>
+    </div>
+
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <div style="margin-bottom:18px;">
+        <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Username</label>
+        <div style="position:relative;">
+          <i class="fas fa-user" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--fg-muted); font-size:13px;"></i>
+          <input type="text" id="loginUser" class="input-field" style="padding-left:38px;" placeholder="Enter username" value="admin" required>
+        </div>
+      </div>
+      <div style="margin-bottom:24px;">
+        <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Password</label>
+        <div style="position:relative;">
+          <i class="fas fa-lock" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--fg-muted); font-size:13px;"></i>
+          <input type="password" id="loginPass" class="input-field" style="padding-left:38px;" placeholder="Enter password" value="admin123" required>
+          <button type="button" onclick="togglePasswordVisibility()" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--fg-muted); cursor:pointer; padding:4px;">
+            <i class="fas fa-eye" id="passToggleIcon"></i>
+          </button>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--fg-muted);">
+          <input type="checkbox" checked style="accent-color:var(--accent); width:16px; height:16px;">
+          Remember me
+        </label>
+        <a href="#" onclick="showToast('Contact admin for password reset','info'); return false;" style="font-size:13px; color:var(--accent); text-decoration:none;">Forgot password?</a>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%; justify-content:center; padding:13px; font-size:15px;">
+        <i class="fas fa-arrow-right-to-bracket"></i> Sign In
+      </button>
+    </form>
+    <p style="text-align:center; margin-top:20px; font-size:12px; color:var(--fg-muted);">Demo: admin / admin123</p>
+  </div>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div id="dashboardPage" style="display:none;">
+  <div class="dash-bg"></div>
+  <div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div style="padding:24px 20px 20px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:40px; height:40px; border-radius:10px; background:var(--accent-glow); display:flex; align-items:center; justify-content:center;">
+          <i class="fas fa-graduation-cap" style="color:var(--accent); font-size:18px;"></i>
+        </div>
+        <div>
+          <h3 style="font-size:16px; font-weight:700; letter-spacing:-0.01em;">EduCore</h3>
+          <p style="font-size:11px; color:var(--fg-muted);">Management Portal</p>
+        </div>
+      </div>
+    </div>
+    <nav style="padding:0 12px;">
+      <div style="padding:0 8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--fg-muted); font-weight:600;">Main</div>
+      <a class="sidebar-link active" data-view="dashboardView" onclick="switchView('dashboardView', this)">
+        <i class="fas fa-th-large"></i> Dashboard
+      </a>
+      <a class="sidebar-link" data-view="studentsView" onclick="switchView('studentsView', this)">
+        <i class="fas fa-users"></i> All Students
+      </a>
+      <a class="sidebar-link" data-view="addView" onclick="switchView('addView', this)">
+        <i class="fas fa-user-plus"></i> Add Student
+      </a>
+      <div style="padding:16px 8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--fg-muted); font-weight:600;">Academics</div>
+      <a class="sidebar-link" data-view="marksView" onclick="switchView('marksView', this)">
+        <i class="fas fa-chart-bar"></i> Marks & Grades
+      </a>
+      <a class="sidebar-link" data-view="searchView" onclick="switchView('searchView', this)">
+        <i class="fas fa-search"></i> Search
+      </a>
+    </nav>
+    <div style="position:absolute; bottom:0; left:0; right:0; padding:16px; border-top:1px solid var(--border);">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="avatar" style="background:var(--accent-glow); color:var(--accent);">A</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:13px; font-weight:600;">Admin User</div>
+          <div style="font-size:11px; color:var(--fg-muted);">admin@educore.io</div>
+        </div>
+        <button onclick="handleLogout()" style="background:none; border:none; color:var(--fg-muted); cursor:pointer; padding:6px;" title="Logout">
+          <i class="fas fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Top Bar -->
+    <header style="padding:16px 32px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); background:rgba(15,17,23,0.8); backdrop-filter:blur(12px); position:sticky; top:0; z-index:30;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <button onclick="toggleSidebar()" style="display:none; background:none; border:none; color:var(--fg); cursor:pointer; padding:6px; font-size:18px;" id="menuBtn">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h2 id="pageTitle" style="font-size:20px; font-weight:700;">Dashboard</h2>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div style="position:relative;">
+          <input type="text" class="input-field" placeholder="Quick search..." style="width:220px; padding:8px 14px 8px 36px; font-size:13px;" id="quickSearch" oninput="handleQuickSearch(this.value)">
+          <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--fg-muted); font-size:12px;"></i>
+        </div>
+        <div style="width:1px; height:24px; background:var(--border);"></div>
+        <span style="font-size:13px; color:var(--fg-muted);" id="currentTime"></span>
+      </div>
+    </header>
+
+    <div style="padding:28px 32px;">
+
+      <!-- ===== DASHBOARD VIEW ===== -->
+      <div id="dashboardView" class="view active">
+        <!-- Stats -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:28px;">
+          <div class="card stat-card amber" style="padding:22px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <span style="font-size:13px; color:var(--fg-muted); font-weight:500;">Total Students</span>
+              <div style="width:38px; height:38px; border-radius:10px; background:var(--accent-glow); display:flex; align-items:center; justify-content:center;">
+                <i class="fas fa-users" style="color:var(--accent); font-size:15px;"></i>
+              </div>
+            </div>
+            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk';" id="statTotal">0</div>
+            <div style="font-size:12px; color:var(--success); margin-top:4px;"><i class="fas fa-arrow-up" style="font-size:10px;"></i> Active records</div>
+          </div>
+          <div class="card stat-card green" style="padding:22px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <span style="font-size:13px; color:var(--fg-muted); font-weight:500;">Average Marks</span>
+              <div style="width:38px; height:38px; border-radius:10px; background:rgba(52,211,153,0.1); display:flex; align-items:center; justify-content:center;">
+                <i class="fas fa-chart-line" style="color:var(--success); font-size:15px;"></i>
+              </div>
+            </div>
+            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk';" id="statAvg">0</div>
+            <div style="font-size:12px; color:var(--fg-muted); margin-top:4px;">Out of 100</div>
+          </div>
+          <div class="card stat-card blue" style="padding:22px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <span style="font-size:13px; color:var(--fg-muted); font-weight:500;">Top Performers</span>
+              <div style="width:38px; height:38px; border-radius:10px; background:rgba(96,165,250,0.1); display:flex; align-items:center; justify-content:center;">
+                <i class="fas fa-trophy" style="color:var(--info); font-size:15px;"></i>
+              </div>
+            </div>
+            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk';" id="statTop">0</div>
+            <div style="font-size:12px; color:var(--fg-muted); margin-top:4px;">Grade A students</div>
+          </div>
+          <div class="card stat-card red" style="padding:22px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <span style="font-size:13px; color:var(--fg-muted); font-weight:500;">Needs Attention</span>
+              <div style="width:38px; height:38px; border-radius:10px; background:rgba(248,113,113,0.1); display:flex; align-items:center; justify-content:center;">
+                <i class="fas fa-exclamation-triangle" style="color:var(--danger); font-size:15px;"></i>
+              </div>
+            </div>
+            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk';" id="statFail">0</div>
+            <div style="font-size:12px; color:var(--danger); margin-top:4px;">Grade D or F</div>
+          </div>
+        </div>
+
+        <!-- Grade Distribution + Recent -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:28px;">
+          <!-- Grade Distribution -->
+          <div class="card" style="padding:24px;">
+            <h3 style="font-size:16px; font-weight:600; margin-bottom:20px;">Grade Distribution</h3>
+            <div id="gradeDistribution" style="display:flex; flex-direction:column; gap:14px;"></div>
+          </div>
+          <!-- Recent Students -->
+          <div class="card" style="padding:24px;">
+            <h3 style="font-size:16px; font-weight:600; margin-bottom:20px;">Recently Added</h3>
+            <div id="recentStudents" style="display:flex; flex-direction:column; gap:10px;"></div>
+          </div>
+        </div>
+
+        <!-- Top Performers -->
+        <div class="card" style="padding:24px;">
+          <h3 style="font-size:16px; font-weight:600; margin-bottom:20px;">Top 5 Performers</h3>
+          <div id="topPerformers"></div>
+        </div>
+      </div>
+
+      <!-- ===== ALL STUDENTS VIEW ===== -->
+      <div id="studentsView" class="view">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <select class="input-field" style="width:140px;" id="filterGrade" onchange="renderStudentTable()">
+              <option value="">All Grades</option>
+              <option value="A">Grade A</option>
+              <option value="B">Grade B</option>
+              <option value="C">Grade C</option>
+              <option value="D">Grade D</option>
+              <option value="F">Grade F</option>
+            </select>
+            <select class="input-field" style="width:140px;" id="filterDept" onchange="renderStudentTable()">
+              <option value="">All Departments</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="switchView('addView', document.querySelector('[data-view=addView]'))">
+            <i class="fas fa-plus"></i> Add New
+          </button>
+        </div>
+        <div class="card" style="overflow:hidden;">
+          <div style="overflow-x:auto; max-height:60vh; overflow-y:auto;">
+            <table class="data-table" id="studentTable">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>ID</th>
+                  <th>Department</th>
+                  <th>Year</th>
+                  <th>Marks</th>
+                  <th>Grade</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentTableBody"></tbody>
+            </table>
+          </div>
+          <div id="emptyState" style="display:none; text-align:center; padding:60px 20px;">
+            <i class="fas fa-inbox" style="font-size:40px; color:var(--border); margin-bottom:12px;"></i>
+            <p style="color:var(--fg-muted); font-size:14px;">No students found</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ADD STUDENT VIEW ===== -->
+      <div id="addView" class="view">
+        <div class="card" style="padding:28px; max-width:640px;">
+          <h3 style="font-size:18px; font-weight:700; margin-bottom:24px;" id="formTitle">Add New Student</h3>
+          <form id="studentForm" onsubmit="return handleStudentSubmit(event)">
+            <input type="hidden" id="editId">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+              <div>
+                <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">First Name</label>
+                <input type="text" class="input-field" id="fName" placeholder="John" required>
+              </div>
+              <div>
+                <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Last Name</label>
+                <input type="text" class="input-field" id="lName" placeholder="Doe" required>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+              <div>
+                <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Email</label>
+                <input type="email" class="input-field" id="sEmail" placeholder="john@university.edu" required>
+              </div>
+              <div>
+                <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Phone</label>
+                <input type="tel" class="input-field" id="sPhone" placeholder="+1 234 567 8900">
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+              <div>
+                <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Department</label>
+                <select class="input-field" id="sDept" required>
+                  <option value="">Select Department</option>
+                  <option>Computer Science</option>
+                  <option>Electrical Engineering</option>
+                  <option>Mechanical Engineering</option>
+                  <option>Civil Engineering</option>
+                  <option>Business Administration</option>
+                  <option>Mathematics</option>
+                  <option>Physics</option>
+                  <option>Chemistry</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Year</label>
+                <select class="input-field" id="sYear" required>
+                  <option value="">Select Year</option>
+                  <option>1st Year</option>
+                  <option>2nd Year</option>
+                  <option>3rd Year</option>
+                  <option>4th Year</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="border-top:1px solid var(--border); margin:20px 0; padding-top:20px;">
+              <h4 style="font-size:15px; font-weight:600; margin-bottom:16px;"><i class="fas fa-chart-bar" style="color:var(--accent); margin-right:8px;"></i>Marks (out of 100 each)</h4>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                <div>
+                  <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Mathematics</label>
+                  <input type="number" class="input-field" id="mMath" placeholder="0-100" min="0" max="100" required oninput="calcPreview()">
+                </div>
+                <div>
+                  <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Science</label>
+                  <input type="number" class="input-field" id="mScience" placeholder="0-100" min="0" max="100" required oninput="calcPreview()">
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                <div>
+                  <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">English</label>
+                  <input type="number" class="input-field" id="mEnglish" placeholder="0-100" min="0" max="100" required oninput="calcPreview()">
+                </div>
+                <div>
+                  <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Computer Science</label>
+                  <input type="number" class="input-field" id="mCS" placeholder="0-100" min="0" max="100" required oninput="calcPreview()">
+                </div>
+              </div>
+              <div>
+                <label style="display:block; font-size:13px; font-weight:500; color:var(--fg-muted); margin-bottom:6px;">Social Studies</label>
+                <input type="number" class="input-field" id="mSocial" placeholder="0-100" min="0" max="100" required oninput="calcPreview()">
+              </div>
+            </div>
+
+            <!-- Live Preview -->
+            <div id="previewBox" style="display:none; background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:18px; margin-bottom:20px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <span style="font-size:12px; color:var(--fg-muted);">Average</span>
+                  <div style="font-size:24px; font-weight:700; font-family:'Space Grotesk';" id="previewAvg">0</div>
+                </div>
+                <div style="text-align:center;">
+                  <span style="font-size:12px; color:var(--fg-muted);">Total</span>
+                  <div style="font-size:24px; font-weight:700; font-family:'Space Grotesk';" id="previewTotal">0/500</div>
+                </div>
+                <div style="text-align:right;">
+                  <span style="font-size:12px; color:var(--fg-muted);">Grade</span>
+                  <div id="previewGrade" class="grade-badge" style="width:44px; height:44px; font-size:18px;">-</div>
+                </div>
+              </div>
+              <div class="progress-bar" style="margin-top:12px;">
+                <div class="progress-fill" id="previewBar" style="width:0%; background:var(--accent);"></div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:12px;">
+              <button type="submit" class="btn-primary" style="flex:1; justify-content:center;">
+                <i class="fas fa-check"></i> <span id="submitBtnText">Add Student</span>
+              </button>
+              <button type="button" class="btn-secondary" onclick="resetForm()">
+                <i class="fas fa-rotate-left"></i> Reset
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ===== MARKS & GRADES VIEW ===== -->
+      <div id="marksView" class="view">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+          <select class="input-field" style="width:200px;" id="marksStudentSelect" onchange="renderMarksDetail()">
+            <option value="">Select a student...</option>
+          </select>
+        </div>
+        <div id="marksDetailArea"></div>
+      </div>
+
+      <!-- ===== SEARCH VIEW ===== -->
+      <div id="searchView" class="view">
+        <div class="card" style="padding:24px; margin-bottom:20px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="position:relative; flex:1;">
+              <i class="fas fa-search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--fg-muted); font-size:14px;"></i>
+              <input type="text" class="input-field" style="padding-left:40px; font-size:15px; padding-top:13px; padding-bottom:13px;" id="searchInput" placeholder="Search by name, ID, email, or department..." oninput="performSearch(this.value)">
+            </div>
+            <button class="btn-secondary" onclick="document.getElementById('searchInput').value=''; performSearch('');">
+              <i class="fas fa-xmark"></i> Clear
+            </button>
+          </div>
+        </div>
+        <div id="searchResults"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+<div id="modalContainer"></div>
+
+<script>
+// ==================== DATA ====================
+const AVATAR_COLORS = [
+  ['#e6a532','rgba(230,165,50,0.15)'],
+  ['#34d399','rgba(52,211,153,0.15)'],
+  ['#60a5fa','rgba(96,165,250,0.15)'],
+  ['#f87171','rgba(248,113,113,0.15)'],
+  ['#a78bfa','rgba(167,139,250,0.15)'],
+  ['#fb923c','rgba(251,146,60,0.15)'],
+  ['#f472b6','rgba(244,114,182,0.15)'],
+  ['#2dd4bf','rgba(45,212,191,0.15)'],
+];
+
+// Sample data
+let students = [
+  { id:'STU001', fname:'Aria', lname:'Chen', email:'aria.chen@uni.edu', phone:'+1 555 0101', dept:'Computer Science', year:'3rd Year', marks:{math:92, science:88, english:76, cs:95, social:82}, createdAt: Date.now()-86400000*5 },
+  { id:'STU002', fname:'Marcus', lname:'Williams', email:'m.williams@uni.edu', phone:'+1 555 0102', dept:'Electrical Engineering', year:'2nd Year', marks:{math:78, science:85, english:70, cs:72, social:68}, createdAt: Date.now()-86400000*4 },
+  { id:'STU003', fname:'Priya', lname:'Sharma', email:'priya.s@uni.edu', phone:'+1 555 0103', dept:'Mathematics', year:'4th Year', marks:{math:98, science:90, english:85, cs:88, social:91}, createdAt: Date.now()-86400000*3 },
+  { id:'STU004', fname:'Luca', lname:'Moretti', email:'luca.m@uni.edu', phone:'+1 555 0104', dept:'Mechanical Engineering', year:'1st Year', marks:{math:55, science:62, english:48, cs:45, social:58}, createdAt: Date.now()-86400000*2 },
+  { id:'STU005', fname:'Zara', lname:'Ahmed', email:'zara.a@uni.edu', phone:'+1 555 0105', dept:'Business Administration', year:'3rd Year', marks:{math:73, science:68, english:91, cs:65, social:88}, createdAt: Date.now()-86400000*1 },
+  { id:'STU006', fname:'Ethan', lname:'Brooks', email:'ethan.b@uni.edu', phone:'+1 555 0106', dept:'Physics', year:'2nd Year', marks:{math:85, science:92, english:65, cs:78, social:72}, createdAt: Date.now()-86400000*0.5 },
+  { id:'STU007', fname:'Sophia', lname:'Tanaka', email:'sophia.t@uni.edu', phone:'+1 555 0107', dept:'Computer Science', year:'4th Year', marks:{math:90, science:87, english:93, cs:96, social:89}, createdAt: Date.now()-86400000*0.2 },
+  { id:'STU008', fname:'Daniel', lname:'Okafor', email:'d.okafor@uni.edu', phone:'+1 555 0108', dept:'Civil Engineering', year:'1st Year', marks:{math:42, science:38, english:55, cs:35, social:50}, createdAt: Date.now()-86400000*0.1 },
+];
+
+let idCounter = 9;
+
+// ==================== UTILITY FUNCTIONS ====================
+function getGrade(avg) {
+  if (avg >= 90) return 'A';
+  if (avg >= 80) return 'B';
+  if (avg >= 70) return 'C';
+  if (avg >= 60) return 'D';
+  return 'F';
+}
+
+function getAvg(marks) {
+  const vals = Object.values(marks);
+  return Math.round(vals.reduce((a,b) => a+b, 0) / vals.length);
+}
+
+function getTotal(marks) {
+  return Object.values(marks).reduce((a,b) => a+b, 0);
+}
+
+function getGradeColor(grade) {
+  const map = { A:'#34d399', B:'#60a5fa', C:'#fbbf24', D:'#fb923c', F:'#f87171' };
+  return map[grade] || '#8b8fa3';
+}
+
+function getAvatarColor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function generateId() {
+  return 'STU' + String(idCounter++).padStart(3, '0');
+}
+
+// ==================== TOAST ====================
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = { success:'fa-check-circle', error:'fa-times-circle', info:'fa-info-circle' };
+  toast.innerHTML = `<i class="fas ${icons[type]}"></i> ${message}`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'toastOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// ==================== LOGIN ====================
+function handleLogin(e) {
+  e.preventDefault();
+  const user = document.getElementById('loginUser').value;
+  const pass = document.getElementById('loginPass').value;
+  if (user === 'admin' && pass === 'admin123') {
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('dashboardPage').style.display = 'block';
+    initDashboard();
+    showToast('Welcome back, Admin!', 'success');
+  } else {
+    showToast('Invalid credentials. Try admin/admin123', 'error');
+  }
+  return false;
+}
+
+function handleLogout() {
+  document.getElementById('dashboardPage').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  showToast('Logged out successfully', 'info');
+}
+
+function togglePasswordVisibility() {
+  const inp = document.getElementById('loginPass');
+  const icon = document.getElementById('passToggleIcon');
+  if (inp.type === 'password') { inp.type = 'text'; icon.className = 'fas fa-eye-slash'; }
+  else { inp.type = 'password'; icon.className = 'fas fa-eye'; }
+}
+
+// ==================== NAVIGATION ====================
+function switchView(viewId, link) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  if (link) link.classList.add('active');
+
+  const titles = {
+    dashboardView: 'Dashboard',
+    studentsView: 'All Students',
+    addView: 'Add Student',
+    marksView: 'Marks & Grades',
+    searchView: 'Search Students'
+  };
+  document.getElementById('pageTitle').textContent = titles[viewId] || 'Dashboard';
+
+  // Refresh data on switch
+  if (viewId === 'dashboardView') refreshDashboard();
+  if (viewId === 'studentsView') renderStudentTable();
+  if (viewId === 'marksView') populateMarksSelect();
+  if (viewId === 'addView') resetForm();
+
+  closeSidebar();
+}
+
+// ==================== SIDEBAR MOBILE ====================
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('mobileOverlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('mobileOverlay').classList.remove('show');
+}
+
+// Responsive check
+function checkResponsive() {
+  const btn = document.getElementById('menuBtn');
+  if (btn) btn.style.display = window.innerWidth <= 768 ? 'block' : 'none';
+}
+window.addEventListener('resize', checkResponsive);
+
+// ==================== CLOCK ====================
+function updateClock() {
+  const now = new Date();
+  const el = document.getElementById('currentTime');
+  if (el) el.textContent = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+}
+setInterval(updateClock, 1000);
+
+// ==================== DASHBOARD ====================
+function initDashboard() {
+  checkResponsive();
+  refreshDashboard();
+  updateClock();
+}
+
+function refreshDashboard() {
+  const total = students.length;
+  const avgs = students.map(s => getAvg(s.marks));
+  const avg = total ? Math.round(avgs.reduce((a,b)=>a+b,0)/total) : 0;
+  const topCount = avgs.filter(a => a >= 90).length;
+  const failCount = avgs.filter(a => a < 60).length;
+
+  animateNumber('statTotal', total);
+  animateNumber('statAvg', avg);
+  animateNumber('statTop', topCount);
+  animateNumber('statFail', failCount);
+
+  renderGradeDistribution();
+  renderRecentStudents();
+  renderTopPerformers();
+}
+
+function animateNumber(elId, target) {
+  const el = document.getElementById(elId);
+  const start = parseInt(el.textContent) || 0;
+  const diff = target - start;
+  const duration = 600;
+  const startTime = performance.now();
+  function step(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(start + diff * eased);
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function renderGradeDistribution() {
+  const container = document.getElementById('gradeDistribution');
+  const grades = ['A','B','C','D','F'];
+  const counts = {};
+  grades.forEach(g => counts[g] = 0);
+  students.forEach(s => { const g = getGrade(getAvg(s.marks)); counts[g]++; });
+  const max = Math.max(...Object.values(counts), 1);
+
+  container.innerHTML = grades.map(g => {
+    const pct = students.length ? Math.round(counts[g]/students.length*100) : 0;
+    const color = getGradeColor(g);
+    return `
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="grade-badge grade-${g}" style="flex-shrink:0;">${g}</div>
+        <div style="flex:1;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span style="font-size:13px;">${counts[g]} students</span>
+            <span style="font-size:12px; color:var(--fg-muted);">${pct}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${(counts[g]/max)*100}%; background:${color};"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderRecentStudents() {
+  const container = document.getElementById('recentStudents');
+  const recent = [...students].sort((a,b) => b.createdAt - a.createdAt).slice(0,5);
+  if (!recent.length) {
+    container.innerHTML = '<p style="color:var(--fg-muted); font-size:13px; text-align:center; padding:20px;">No students yet</p>';
+    return;
+  }
+  container.innerHTML = recent.map(s => {
+    const [color, bg] = getAvatarColor(s.fname + s.lname);
+    const avg = getAvg(s.marks);
+    const grade = getGrade(avg);
+    return `
+      <div style="display:flex; align-items:center; gap:12px; padding:8px; border-radius:10px; transition:background 0.2s; cursor:pointer;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+        <div class="avatar" style="background:${bg}; color:${color};">${s.fname[0]}${s.lname[0]}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.fname} ${s.lname}</div>
+          <div style="font-size:12px; color:var(--fg-muted);">${s.dept}</div>
+        </div>
+        <div class="grade-badge grade-${grade}" style="width:32px; height:32px; font-size:13px;">${grade}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTopPerformers() {
+  const container = document.getElementById('topPerformers');
+  const sorted = [...students].sort((a,b) => getAvg(b.marks) - getAvg(a.marks)).slice(0,5);
+  if (!sorted.length) {
+    container.innerHTML = '<p style="color:var(--fg-muted); font-size:13px; text-align:center; padding:20px;">No data available</p>';
+    return;
+  }
+  const medals = ['🥇','🥈','🥉','4th','5th'];
+  container.innerHTML = `
+    <div style="display:grid; grid-template-columns:40px 1fr repeat(6, 80px); gap:0; font-size:13px; align-items:center;">
+      <div style="padding:8px; font-weight:600; color:var(--fg-muted); font-size:12px;">#</div>
+      <div style="padding:8px; font-weight:600; color:var(--fg-muted); font-size:12px;">Student</div>
+      <div style="padding:8px; text-align:center; font-weight:600; color:var(--fg-muted); font-size:12px;">Math</div>
+      <div style="padding:8px; text-align:center; font-weight:600; color:var(--fg-muted); font-size:12px;">Sci</div>
+      <div style="padding:8px; text-align:center; font-weight:600; color:var(--fg-muted); font-size:12px;">Eng</div>
+      <div style="padding:8px; text-align:center; font-weight:600; color:var(--fg-muted); font-size:12px;">CS</div>
+      <div style="padding:8px; text-align:center; font-weight:600; color:var(--fg-muted); font-size:12px;">Soc</div>
+      <div style="padding:8px; text-align:center; font-weight:600; color:var(--fg-muted); font-size:12px;">Avg</div>
+      ${sorted.map((s, i) => {
+        const avg = getAvg(s.marks);
+        const m = s.marks;
+        return `
+          <div style="padding:10px 8px; font-size:16px; border-top:1px solid var(--border);">${i < 3 ? medals[i] : (i+1)}</div>
+          <div style="padding:10px 8px; border-top:1px solid var(--border); display:flex; align-items:center; gap:10px;">
+            <div class="avatar" style="width:30px; height:30px; font-size:11px; border-radius:8px; background:${getAvatarColor(s.fname+s.lname)[1]}; color:${getAvatarColor(s.fname+s.lname)[0]};">${s.fname[0]}${s.lname[0]}</div>
+            <div>
+              <div style="font-weight:500; white-space:nowrap;">${s.fname} ${s.lname}</div>
+              <div style="font-size:11px; color:var(--fg-muted);">${s.id}</div>
+            </div>
+          </div>
+          <div style="padding:10px 8px; text-align:center; border-top:1px solid var(--border); color:${m.math >= 70 ? 'var(--fg)' : 'var(--danger)'}">${m.math}</div>
+          <div style="padding:10px 8px; text-align:center; border-top:1px solid var(--border); color:${m.science >= 70 ? 'var(--fg)' : 'var(--danger)'}">${m.science}</div>
+          <div style="padding:10px 8px; text-align:center; border-top:1px solid var(--border); color:${m.english >= 70 ? 'var(--fg)' : 'var(--danger)'}">${m.english}</div>
+          <div style="padding:10px 8px; text-align:center; border-top:1px solid var(--border); color:${m.cs >= 70 ? 'var(--fg)' : 'var(--danger)'}">${m.cs}</div>
+          <div style="padding:10px 8px; text-align:center; border-top:1px solid var(--border); color:${m.social >= 70 ? 'var(--fg)' : 'var(--danger)'}">${m.social}</div>
+          <div style="padding:10px 8px; text-align:center; border-top:1px solid var(--border); font-weight:700; color:${getGradeColor(getGrade(avg))}">${avg}</div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ==================== STUDENT TABLE ====================
+function renderStudentTable() {
+  const gradeFilter = document.getElementById('filterGrade').value;
+  const deptFilter = document.getElementById('filterDept').value;
+  let filtered = [...students];
+
+  if (gradeFilter) filtered = filtered.filter(s => getGrade(getAvg(s.marks)) === gradeFilter);
+  if (deptFilter) filtered = filtered.filter(s => s.dept === deptFilter);
+
+  const tbody = document.getElementById('studentTableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(s => {
+    const avg = getAvg(s.marks);
+    const grade = getGrade(avg);
+    const [color, bg] = getAvatarColor(s.fname + s.lname);
+    return `
+      <tr>
+        <td>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="avatar" style="background:${bg}; color:${color};">${s.fname[0]}${s.lname[0]}</div>
+            <div>
+              <div style="font-weight:500;">${s.fname} ${s.lname}</div>
+              <div style="font-size:12px; color:var(--fg-muted);">${s.email}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-family:'Space Grotesk'; font-weight:500; color:var(--fg-muted);">${s.id}</td>
+        <td style="font-size:13px;">${s.dept}</td>
+        <td style="font-size:13px;">${s.year}</td>
+        <td style="font-family:'Space Grotesk'; font-weight:600;">${avg}</td>
+        <td><div class="grade-badge grade-${grade}">${grade}</div></td>
+        <td style="text-align:right;">
+          <div style="display:flex; gap:6px; justify-content:flex-end;">
+            <button class="btn-edit" onclick="editStudent('${s.id}')" title="Edit"><i class="fas fa-pen" style="font-size:11px;"></i></button>
+            <button class="btn-danger" onclick="confirmDelete('${s.id}')" title="Delete"><i class="fas fa-trash" style="font-size:11px;"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Populate department filter
+function populateDeptFilter() {
+  const depts = [...new Set(students.map(s => s.dept))].sort();
+  const sel = document.getElementById('filterDept');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Departments</option>' + depts.map(d => `<option>${d}</option>`).join('');
+  sel.value = current;
+}
+
+// ==================== ADD / EDIT STUDENT ====================
+function calcPreview() {
+  const fields = ['mMath','mScience','mEnglish','mCS','mSocial'];
+  const vals = fields.map(f => {
+    const v = parseInt(document.getElementById(f).value);
+    return isNaN(v) ? 0 : Math.max(0, Math.min(100, v));
+  });
+  const total = vals.reduce((a,b)=>a+b, 0);
+  const avg = Math.round(total / 5);
+  const grade = getGrade(avg);
+
+  document.getElementById('previewBox').style.display = 'flex';
+  document.getElementById('previewAvg').textContent = avg;
+  document.getElementById('previewTotal').textContent = `${total}/500`;
+  const gradeEl = document.getElementById('previewGrade');
+  gradeEl.textContent = grade;
+  gradeEl.className = `grade-badge grade-${grade}`;
+  gradeEl.style.width = '44px';
+  gradeEl.style.height = '44px';
+  gradeEl.style.fontSize = '18px';
+
+  const bar = document.getElementById('previewBar');
+  bar.style.width = `${avg}%`;
+  bar.style.background = getGradeColor(grade);
+}
+
+function handleStudentSubmit(e) {
+  e.preventDefault();
+  const editId = document.getElementById('editId').value;
+  const data = {
+    fname: document.getElementById('fName').value.trim(),
+    lname: document.getElementById('lName').value.trim(),
+    email: document.getElementById('sEmail').value.trim(),
+    phone: document.getElementById('sPhone').value.trim(),
+    dept: document.getElementById('sDept').value,
+    year: document.getElementById('sYear').value,
+    marks: {
+      math: parseInt(document.getElementById('mMath').value),
+      science: parseInt(document.getElementById('mScience').value),
+      english: parseInt(document.getElementById('mEnglish').value),
+      cs: parseInt(document.getElementById('mCS').value),
+      social: parseInt(document.getElementById('mSocial').value),
+    }
+  };
+
+  // Validate marks
+  const markVals = Object.values(data.marks);
+  if (markVals.some(v => isNaN(v) || v < 0 || v > 100)) {
+    showToast('Marks must be between 0 and 100', 'error');
+    return false;
+  }
+
+  if (editId) {
+    // Update existing
+    const idx = students.findIndex(s => s.id === editId);
+    if (idx !== -1) {
+      students[idx] = { ...students[idx], ...data };
+      showToast(`Updated ${data.fname} ${data.lname} successfully`, 'success');
+    }
+  } else {
+    // Add new
+    const newStudent = {
+      id: generateId(),
+      ...data,
+      createdAt: Date.now()
+    };
+    students.push(newStudent);
+    showToast(`Added ${data.fname} ${data.lname} successfully`, 'success');
+  }
+
+  resetForm();
+  populateDeptFilter();
+  return false;
+}
+
+function resetForm() {
+  document.getElementById('studentForm').reset();
+  document.getElementById('editId').value = '';
+  document.getElementById('previewBox').style.display = 'none';
+  document.getElementById('formTitle').textContent = 'Add New Student';
+  document.getElementById('submitBtnText').textContent = 'Add Student';
+}
+
+function editStudent(id) {
+  const s = students.find(st => st.id === id);
+  if (!s) return;
+
+  switchView('addView', document.querySelector('[data-view=addView]'));
+
+  document.getElementById('editId').value = s.id;
+  document.getElementById('fName').value = s.fname;
+  document.getElementById('lName').value = s.lname;
+  document.getElementById('sEmail').value = s.email;
+  document.getElementById('sPhone').value = s.phone || '';
+  document.getElementById('sDept').value = s.dept;
+  document.getElementById('sYear').value = s.year;
+  document.getElementById('mMath').value = s.marks.math;
+  document.getElementById('mScience').value = s.marks.science;
+  document.getElementById('mEnglish').value = s.marks.english;
+  document.getElementById('mCS').value = s.marks.cs;
+  document.getElementById('mSocial').value = s.marks.social;
+
+  document.getElementById('formTitle').textContent = `Edit: ${s.fname} ${s.lname}`;
+  document.getElementById('submitBtnText').textContent = 'Update Student';
+  calcPreview();
+}
+
+function confirmDelete(id) {
+  const s = students.find(st => st.id === id);
+  if (!s) return;
+  showModal(
+    'Confirm Deletion',
+    `Are you sure you want to delete <strong>${s.fname} ${s.lname}</strong> (${s.id})? This action cannot be undone.`,
+    () => {
+      students = students.filter(st => st.id !== id);
+      showToast(`Deleted ${s.fname} ${s.lname}`, 'error');
+      renderStudentTable();
+      populateDeptFilter();
+    }
+  );
+}
+
+// ==================== MODAL ====================
+function showModal(title, message, onConfirm) {
+  const container = document.getElementById('modalContainer');
+  container.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <h3 style="font-size:18px; font-weight:700; margin-bottom:12px;">${title}</h3>
+        <p style="color:var(--fg-muted); font-size:14px; line-height:1.6; margin-bottom:24px;">${message}</p>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn-primary" style="background:var(--danger);" id="modalConfirmBtn">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalConfirmBtn').onclick = () => { onConfirm(); closeModal(); };
+}
+
+function showStudentModal(id) {
+  const s = students.find(st => st.id === id);
+  if (!s) return;
+  const avg = getAvg(s.marks);
+  const grade = getGrade(avg);
+  const [color, bg] = getAvatarColor(s.fname + s.lname);
+  const subjects = [
+    { name:'Mathematics', key:'math', icon:'fa-square-root-variable' },
+    { name:'Science', key:'science', icon:'fa-flask' },
+    { name:'English', key:'english', icon:'fa-book' },
+    { name:'Computer Science', key:'cs', icon:'fa-laptop-code' },
+    { name:'Social Studies', key:'social', icon:'fa-globe' },
+  ];
+
+  const container = document.getElementById('modalContainer');
+  container.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box" style="max-width:560px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div class="avatar" style="width:48px; height:48px; font-size:18px; border-radius:12px; background:${bg}; color:${color};">${s.fname[0]}${s.lname[0]}</div>
+            <div>
+              <h3 style="font-size:18px; font-weight:700;">${s.fname} ${s.lname}</h3>
+              <p style="font-size:13px; color:var(--fg-muted);">${s.id} &middot; ${s.dept}</p>
+            </div>
+          </div>
+          <button onclick="closeModal()" style="background:none; border:none; color:var(--fg-muted); cursor:pointer; padding:6px; font-size:18px;"><i class="fas fa-xmark"></i></button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px;">
+          <div style="background:var(--bg); border-radius:10px; padding:14px; text-align:center;">
+            <div style="font-size:11px; color:var(--fg-muted); margin-bottom:4px;">Average</div>
+            <div style="font-size:24px; font-weight:700; font-family:'Space Grotesk'; color:${getGradeColor(grade)}">${avg}</div>
+          </div>
+          <div style="background:var(--bg); border-radius:10px; padding:14px; text-align:center;">
+            <div style="font-size:11px; color:var(--fg-muted); margin-bottom:4px;">Grade</div>
+            <div class="grade-badge grade-${grade}" style="width:40px; height:40px; font-size:18px; margin:0 auto;">${grade}</div>
+          </div>
+          <div style="background:var(--bg); border-radius:10px; padding:14px; text-align:center;">
+            <div style="font-size:11px; color:var(--fg-muted); margin-bottom:4px;">Total</div>
+            <div style="font-size:24px; font-weight:700; font-family:'Space Grotesk';">${getTotal(s.marks)}<span style="font-size:13px; color:var(--fg-muted);">/500</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+          ${subjects.map(sub => {
+            const val = s.marks[sub.key];
+            const c = val >= 70 ? 'var(--success)' : val >= 50 ? 'var(--warning)' : 'var(--danger)';
+            return `
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:32px; height:32px; border-radius:8px; background:rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center;">
+                  <i class="fas ${sub.icon}" style="font-size:12px; color:var(--fg-muted);"></i>
+                </div>
+                <div style="flex:1;">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span style="font-size:13px;">${sub.name}</span>
+                    <span style="font-size:13px; font-weight:600; color:${c};">${val}</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width:${val}%; background:${c};"></div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <div style="display:flex; gap:8px; font-size:13px; color:var(--fg-muted); border-top:1px solid var(--border); padding-top:14px;">
+          <span><i class="fas fa-envelope" style="margin-right:4px;"></i>${s.email}</span>
+          ${s.phone ? `<span>&middot; <i class="fas fa-phone" style="margin-right:4px;"></i>${s.phone}</span>` : ''}
+          <span>&middot; ${s.year}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function closeModal() {
+  document.getElementById('modalContainer').innerHTML = '';
+}
+
+// ==================== MARKS VIEW ====================
+function populateMarksSelect() {
+  const sel = document.getElementById('marksStudentSelect');
+  const sorted = [...students].sort((a,b) => a.fname.localeCompare(b.fname));
+  sel.innerHTML = '<option value="">Select a student...</option>' +
+    sorted.map(s => `<option value="${s.id}">${s.fname} ${s.lname} (${s.id})</option>`).join('');
+  document.getElementById('marksDetailArea').innerHTML = `
+    <div class="card" style="padding:60px; text-align:center;">
+      <i class="fas fa-chart-bar" style="font-size:40px; color:var(--border); margin-bottom:12px;"></i>
+      <p style="color:var(--fg-muted);">Select a student to view detailed marks</p>
+    </div>
+  `;
+}
+
+function renderMarksDetail() {
+  const id = document.getElementById('marksStudentSelect').value;
+  const area = document.getElementById('marksDetailArea');
+  if (!id) {
+    area.innerHTML = `
+      <div class="card" style="padding:60px; text-align:center;">
+        <i class="fas fa-chart-bar" style="font-size:40px; color:var(--border); margin-bottom:12px;"></i>
+        <p style="color:var(--fg-muted);">Select a student to view detailed marks</p>
+      </div>
+    `;
+    return;
+  }
+  const s = students.find(st => st.id === id);
+  if (!s) return;
+
+  const subjects = [
+    { name:'Mathematics', key:'math', icon:'fa-square-root-variable' },
+    { name:'Science', key:'science', icon:'fa-flask' },
+    { name:'English', key:'english', icon:'fa-book' },
+    { name:'Computer Science', key:'cs', icon:'fa-laptop-code' },
+    { name:'Social Studies', key:'social', icon:'fa-globe' },
+  ];
+
+  const avg = getAvg(s.marks);
+  const grade = getGrade(avg);
+  const [color, bg] = getAvatarColor(s.fname + s.lname);
+
+  // Simple radar-like visual using bars
+  area.innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+      <div class="card" style="padding:24px;">
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+          <div class="avatar" style="width:48px; height:48px; font-size:18px; border-radius:12px; background:${bg}; color:${color};">${s.fname[0]}${s.lname[0]}</div>
+          <div>
+            <h3 style="font-size:18px; font-weight:700;">${s.fname} ${s.lname}</h3>
+            <p style="font-size:13px; color:var(--fg-muted);">${s.dept} &middot; ${s.year}</p>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div style="background:var(--bg); border-radius:12px; padding:16px; text-align:center;">
+            <div style="font-size:11px; color:var(--fg-muted); text-transform:uppercase; letter-spacing:0.05em;">Average</div>
+            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk'; color:${getGradeColor(grade)}; margin-top:4px;">${avg}</div>
+          </div>
+          <div style="background:var(--bg); border-radius:12px; padding:16px; text-align:center;">
+            <div style="font-size:11px; color:var(--fg-muted); text-transform:uppercase; letter-spacing:0.05em;">Grade</div>
+            <div class="grade-badge grade-${grade}" style="width:44px; height:44px; font-size:20px; margin:8px auto 0;">${grade}</div>
+          </div>
+        </div>
+        <div style="margin-top:16px; background:var(--bg); border-radius:12px; padding:16px; text-align:center;">
+          <div style="font-size:11px; color:var(--fg-muted); text-transform:uppercase; letter-spacing:0.05em;">Total Marks</div>
+          <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk'; margin-top:4px;">${getTotal(s.marks)}<span style="font-size:14px; color:var(--fg-muted);"> / 500</span></div>
+          <div class="progress-bar" style="margin-top:10px;">
+            <div class="progress-fill" style="width:${(getTotal(s.marks)/500)*100}%; background:${getGradeColor(grade)};"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="padding:24px;">
+        <h4 style="font-size:15px; font-weight:600; margin-bottom:20px;">Subject-wise Breakdown</h4>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          ${subjects.map(sub => {
+            const val = s.marks[sub.key];
+            const c = val >= 90 ? 'var(--success)' : val >= 80 ? 'var(--info)' : val >= 70 ? 'var(--accent)' : val >= 60 ? 'var(--warning)' : 'var(--danger)';
+            const status = val >= 90 ? 'Excellent' : val >= 80 ? 'Good' : val >= 70 ? 'Average' : val >= 60 ? 'Below Avg' : 'Fail';
+            return `
+              <div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <i class="fas ${sub.icon}" style="font-size:12px; color:var(--fg-muted);"></i>
+                    <span style="font-size:13px; font-weight:500;">${sub.name}</span>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:11px; color:${c}; font-weight:500;">${status}</span>
+                    <span style="font-size:15px; font-weight:700; font-family:'Space Grotesk'; color:${c};">${val}</span>
+                  </div>
+                </div>
+                <div class="progress-bar" style="height:8px;">
+                  <div class="progress-fill" style="width:${val}%; background:${c}; border-radius:4px;"></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== SEARCH ====================
+function performSearch(query) {
+  const container = document.getElementById('searchResults');
+  if (!query.trim()) {
+    container.innerHTML = `
+      <div class="card" style="padding:60px; text-align:center;">
+        <i class="fas fa-search" style="font-size:40px; color:var(--border); margin-bottom:12px;"></i>
+        <p style="color:var(--fg-muted);">Type to search students by name, ID, email, or department</p>
+      </div>
+    `;
+    return;
+  }
+
+  const q = query.toLowerCase();
+  const results = students.filter(s =>
+    s.fname.toLowerCase().includes(q) ||
+    s.lname.toLowerCase().includes(q) ||
+    `${s.fname} ${s.lname}`.toLowerCase().includes(q) ||
+    s.id.toLowerCase().includes(q) ||
+    s.email.toLowerCase().includes(q) ||
+    s.dept.toLowerCase().includes(q)
+  );
+
+  if (!results.length) {
+    container.innerHTML = `
+      <div class="card" style="padding:60px; text-align:center;">
+        <i class="fas fa-user-slash" style="font-size:40px; color:var(--border); margin-bottom:12px;"></i>
+        <p style="color:var(--fg-muted);">No students found for "<strong style="color:var(--fg);">${query}</strong>"</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <p style="font-size:13px; color:var(--fg-muted); margin-bottom:12px;">${results.length} result${results.length > 1 ? 's' : ''} found</p>
+    <div style="display:grid; gap:10px;">
+      ${results.map(s => {
+        const avg = getAvg(s.marks);
+        const grade = getGrade(avg);
+        const [color, bg] = getAvatarColor(s.fname + s.lname);
+        return `
+          <div class="card" style="padding:16px; cursor:pointer;" onclick="showStudentModal('${s.id}')">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div class="avatar" style="background:${bg}; color:${color};">${s.fname[0]}${s.lname[0]}</div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-weight:500;">${s.fname} ${s.lname}</div>
+                <div style="font-size:12px; color:var(--fg-muted);">${s.id} &middot; ${s.email}</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="grade-badge grade-${grade}" style="margin-bottom:4px;">${grade}</div>
+                <div style="font-size:11px; color:var(--fg-muted);">${s.dept}</div>
+              </div>
+              <i class="fas fa-chevron-right" style="color:var(--border); font-size:12px;"></i>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function handleQuickSearch(val) {
+  if (val.trim().length >= 2) {
+    switchView('searchView', document.querySelector('[data-view=searchView]'));
+    document.getElementById('searchInput').value = val;
+    performSearch(val);
+    document.getElementById('quickSearch').value = '';
+  }
+}
+
+// ==================== PARTICLE CANVAS (LOGIN) ====================
+function initParticles() {
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let mouse = { x: -1000, y: -1000 };
+  const PARTICLE_COUNT = 60;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  document.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+
+  class Particle {
+    constructor() {
+      this.reset();
+    }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = (Math.random() - 0.5) * 0.4;
+      this.size = Math.random() * 2 + 0.5;
+      this.opacity = Math.random() * 0.4 + 0.1;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+      if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+
+      // Mouse repulsion
+      const dx = this.x - mouse.x;
+      const dy = this.y - mouse.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 120) {
+        const force = (120 - dist) / 120 * 0.02;
+        this.vx += dx * force;
+        this.vy += dy * force;
+      }
+      // Dampen
+      this.vx *= 0.99;
+      this.vy *= 0.99;
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, Math.max(0.1, this.size), 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(230,165,50,${this.opacity})`;
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => { p.update(); p.draw(); });
+
+    // Draw connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i+1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 150) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(230,165,50,${0.06 * (1 - dist/150)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+  initParticles();
+  populateDeptFilter();
+
+  // Preload search view placeholder
+  performSearch('');
+
+  // Keyboard shortcut: Escape to close modal
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+});
+</script>
+</body>
+</html>
